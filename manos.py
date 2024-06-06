@@ -120,7 +120,7 @@ while cap.isOpened():
         if cv2.waitKey(5) & 0xFF == 27:
             break
 
-# Cierra las ventanas y libera los recursos
+# Cierra las ventanas y libera los recursos aaa
 cap.release()
 cv2.destroyAllWindows()
 
