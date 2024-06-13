@@ -17,13 +17,6 @@ hands = mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_c
 # Inicializa el dibujante
 mp_drawing = mp.solutions.drawing_utils
 
-# Inicializa el detector de manos
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5)
-
-# Inicializa el dibujante
-mp_drawing = mp.solutions.drawing_utils
-
 # Define la función de reconocimiento de gestos
 def recognize_gesture(landmarks):
     thumb_tip = landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
@@ -48,9 +41,13 @@ def recognize_gesture(landmarks):
         return 'Palma abierta'
     else:
         return 'Gesto desconocido'
+# Reemplaza los argumentos con '/' por '--' para que argparse los pueda procesar
+sys.argv = [arg if not arg.startswith('/') else '--' + arg[1:] for arg in sys.argv]
+# Define el analizador de argumentos
 parser = argparse.ArgumentParser(description='Detectar gestos de manos en un video y guardarlos en un archivo CSV.')
 parser.add_argument('video_path', type=str, nargs='?', default=None, help='Ruta del video o URL del video')
-parser.add_argument('/show', action='store_true', help='Si se incluye, muestra el video.')  # Nuevo argumento para mostrar el video
+parser.add_argument('--show', action='store_true', help='Si se incluye, muestra el video.')
+parser.add_argument('--frames', type=int, default=1, help='Procesa cada "x" frames.')
 
 # Parse los argumentos
 args = parser.parse_args()
@@ -101,11 +98,19 @@ min_gesture_duration = 1  # Duración mínima del gesto en segundos
 # Inicializa la lista de resultados
 results = []
 
-# Modifica el bucle principal para controlar la visualización del video
+# Modifica el bucle principal para procesar cada "x" frames
+frame_count = 0
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
+
+    # Incrementa el contador de frames
+    frame_count += 1
+
+    # Procesa solo cada "x" frames
+    if frame_count % args.frames != 0:
+        continue
 
     # Convierte el color BGR a RGB
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -147,8 +152,8 @@ while cap.isOpened():
             # Actualiza el último gesto reconocido
             last_gesture = gesture
 
-    # Muestra la imagen solo si se proporciona el argumento /show
-    if args.show:
+    # Muestra la imagen solo si se proporciona el argumento /show y es el frame a procesar
+    if args.show and frame_count % args.frames == 0:
         cv2.imshow('MediaPipe Hands', frame)
 
     if cv2.waitKey(5) & 0xFF == 27:
