@@ -8,8 +8,14 @@ import tkinter as tk
 from tkinter import filedialog
 from pytube import YouTube
 import youtube_dl
-import string
 import os
+
+# Inicializa el detector de manos
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+# Inicializa el dibujante
+mp_drawing = mp.solutions.drawing_utils
 
 # Inicializa el detector de manos
 mp_hands = mp.solutions.hands
@@ -42,10 +48,9 @@ def recognize_gesture(landmarks):
         return 'Palma abierta'
     else:
         return 'Gesto desconocido'
-
-# Define el analizador de argumentos
 parser = argparse.ArgumentParser(description='Detectar gestos de manos en un video y guardarlos en un archivo CSV.')
 parser.add_argument('video_path', type=str, nargs='?', default=None, help='Ruta del video o URL del video')
+parser.add_argument('/show', action='store_true', help='Si se incluye, muestra el video.')  # Nuevo argumento para mostrar el video
 
 # Parse los argumentos
 args = parser.parse_args()
@@ -96,6 +101,7 @@ min_gesture_duration = 1  # Duración mínima del gesto en segundos
 # Inicializa la lista de resultados
 results = []
 
+# Modifica el bucle principal para controlar la visualización del video
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -125,9 +131,9 @@ while cap.isOpened():
                         formatted_time = time.strftime('%H:%M:%S', time.gmtime(timestamp))  # Formatea el tiempo en h:m:s
                         result = {
                             'time': formatted_time,
-                            'title': 'IA Generated',  # Puedes ajustar esto según necesites
-                            'description': 'Gestos',  # Usa la descripción del gesto como descripción
-                            'tags': last_gesture  # Etiqueta general, puedes ajustarlo según necesites
+                            'title': video_title,  # Título del video
+                            'description': 'Gestos',  # Descripción del gesto
+                            'tags': last_gesture  # Etiqueta del gesto
                         }
                         results.append(result)  # Añade el resultado a la lista
 
@@ -141,11 +147,12 @@ while cap.isOpened():
             # Actualiza el último gesto reconocido
             last_gesture = gesture
 
-        # Muestra la imagen
+    # Muestra la imagen solo si se proporciona el argumento /show
+    if args.show:
         cv2.imshow('MediaPipe Hands', frame)
 
-        if cv2.waitKey(5) & 0xFF == 27:
-            break
+    if cv2.waitKey(5) & 0xFF == 27:
+        break
 
 # Cierra las ventanas y libera los recursos
 cap.release()
