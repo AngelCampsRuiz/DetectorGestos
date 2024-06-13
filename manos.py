@@ -7,6 +7,9 @@ import sys
 import tkinter as tk
 from tkinter import filedialog
 from pytube import YouTube
+import youtube_dl
+import string
+import os
 
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -59,11 +62,21 @@ if 'youtube.com' in video_path or 'youtu.be' in video_path:
         yt = YouTube(video_path)
         stream = yt.streams.filter(file_extension='mp4').get_highest_resolution()
         video_url = stream.url
+        # Configuración para youtube_dl
+        ydl_opts = {
+            'quiet': True,  # No imprimir salida
+        }
+        # Usar youtube_dl para extraer información del video
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(video_url, download=False)
+            video_title = info_dict.get('title', None)
     except Exception as e:
         print(f"Error: No se pudo obtener el video de YouTube. Detalles: {e}")
         sys.exit(1)
 else:
     video_url = video_path
+    # Obtener el nombre del archivo de video
+    video_title = os.path.splitext(os.path.basename(video_path))[0]
 
 cap = cv2.VideoCapture(video_url)
 
@@ -118,3 +131,10 @@ with open('results.csv', 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=['time', 'gesture'])
     writer.writeheader()
     writer.writerows(results)
+
+# Reemplazar caracteres no válidos en nombres de archivos
+valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+video_title = ''.join(c for c in video_title if c in valid_chars)
+
+# Cambiar el nombre del archivo
+os.rename('results.csv', f"{video_title}.csv")
