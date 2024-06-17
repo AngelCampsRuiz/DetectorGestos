@@ -41,13 +41,35 @@ def recognize_gesture(landmarks):
         return 'Palma abierta'
     else:
         return 'Gesto desconocido'
+
+# Define la función para extraer un frame específico y guardarlo como PNG
+def extract_frame(video_url, extract_time_ms, output_filename):
+    cap = cv2.VideoCapture(video_url)
+    if not cap.isOpened():
+        print(f"Error: No se pudo abrir el video en la ruta proporcionada: {video_url}")
+        return False
+
+    cap.set(cv2.CAP_PROP_POS_MSEC, extract_time_ms)
+    ret, frame = cap.read()
+    if ret:
+        cv2.imwrite(output_filename, frame)
+        print(f"Frame extraído y guardado como {output_filename}")
+        cap.release()
+        return True
+    else:
+        print(f"Error: No se pudo extraer el frame en el tiempo especificado.")
+        cap.release()
+        return False
+
 # Reemplaza los argumentos con '/' por '--' para que argparse los pueda procesar
 sys.argv = [arg if not arg.startswith('/') else '--' + arg[1:] for arg in sys.argv]
+
 # Define el analizador de argumentos
-parser = argparse.ArgumentParser(description='Detectar gestos de manos en un video y guardarlos en un archivo CSV.')
+parser = argparse.ArgumentParser(description='Detectar gestos de manos en un video y guardarlos en un archivo CSV o extraer un frame específico.')
 parser.add_argument('video_path', type=str, nargs='?', default=None, help='Ruta del video o URL del video')
 parser.add_argument('--show', action='store_true', help='Si se incluye, muestra el video.')
 parser.add_argument('--frames', type=int, default=1, help='Procesa cada "x" frames.')
+parser.add_argument('--extract', type=str, help='Tiempo del frame a extraer en formato mm:ss:fff (minuto:segundo:milisegundo)')
 
 # Parse los argumentos
 args = parser.parse_args()
@@ -82,6 +104,24 @@ else:
     # Obtener el nombre del archivo de video
     video_title = os.path.splitext(os.path.basename(video_path))[0]
 
+# Si se proporciona un tiempo para extraer un frame específico
+if args.extract:
+    try:
+        extract_time_parts = args.extract.split(':')
+        extract_time_ms = (int(extract_time_parts[0]) * 60 * 1000 +
+                           int(extract_time_parts[1]) * 1000 +
+                           int(extract_time_parts[2]))
+    except Exception as e:
+        print(f"Error: Formato de tiempo no válido. Detalles: {e}")
+        sys.exit(1)
+
+    # Llama a la función para extraer el frame
+    extract_frame_filename = f'extracted_frame_{args.extract.replace(":", "-")}.png'
+    if extract_frame(video_url, extract_time_ms, extract_frame_filename):
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
 # Abre el video directamente desde la URL
 cap = cv2.VideoCapture(video_url)
 
@@ -98,8 +138,9 @@ min_gesture_duration = 1  # Duración mínima del gesto en segundos
 # Inicializa la lista de resultados
 results = []
 
-# Modifica el bucle principal para procesar cada "x" frames
+# Procesa cada frame del video
 frame_count = 0
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -163,9 +204,10 @@ while cap.isOpened():
 cap.release()
 cv2.destroyAllWindows()
 
-# Guarda los resultados en un archivo CSV
-with open('results.csv', 'w', newline='') as f:
-    fieldnames = ['time', 'title', 'description', 'tags']
-    writer = csv.DictWriter(f, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(results)
+# Guarda los resultados en un archivo CSV si no se extrajo un frame específico
+if not args.extract:
+    with open('results.csv', 'w', newline='') as f:
+        fieldnames = ['time', 'title', 'description', 'tags']
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(results)
