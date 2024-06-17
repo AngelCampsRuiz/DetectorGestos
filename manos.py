@@ -106,6 +106,7 @@ else:
 
 # Si se proporciona un tiempo para extraer un frame específico
 if args.extract:
+    start_time = time.time()
     try:
         extract_time_parts = args.extract.split(':')
         extract_time_ms = (int(extract_time_parts[0]) * 60 * 1000 +
@@ -118,6 +119,8 @@ if args.extract:
     # Llama a la función para extraer el frame
     extract_frame_filename = f'extracted_frame_{args.extract.replace(":", "-")}.png'
     if extract_frame(video_url, extract_time_ms, extract_frame_filename):
+        end_time = time.time()
+        print(f"Tiempo total para extraer el frame: {end_time - start_time} segundos")
         sys.exit(0)
     else:
         sys.exit(1)
@@ -140,6 +143,9 @@ results = []
 
 # Procesa cada frame del video
 frame_count = 0
+
+# Marca el inicio del procesamiento de gestos
+start_time = time.time()
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -200,6 +206,9 @@ while cap.isOpened():
     if cv2.waitKey(5) & 0xFF == 27:
         break
 
+# Marca el final del procesamiento de gestos
+end_time = time.time()
+
 # Cierra las ventanas y libera los recursos
 cap.release()
 cv2.destroyAllWindows()
@@ -211,3 +220,4 @@ if not args.extract:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(results)
+    print(f"Tiempo total para procesar los gestos: {end_time - start_time} segundos")
