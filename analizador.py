@@ -1,3 +1,10 @@
+#analizador.py
+# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /frame=5
+# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /extract 01:30:500
+# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /show
+# python3 analizador.py /ayuda
+
+
 import cv2
 import mediapipe as mp
 import csv
@@ -70,9 +77,21 @@ parser.add_argument('video_path', type=str, nargs='?', default=None, help='Ruta 
 parser.add_argument('--show', action='store_true', help='Si se incluye, muestra el video.')
 parser.add_argument('--frames', type=int, default=1, help='Procesa cada "x" frames.')
 parser.add_argument('--extract', type=str, help='Tiempo del frame a extraer en formato mm:ss:fff (minuto:segundo:milisegundo)')
+parser.add_argument('--ayuda', action='store_true', help='Muestra los comentarios de ayuda.')
 
 # Parse los argumentos
 args = parser.parse_args()
+
+# Muestra los comentarios de ayuda si se incluye el argumento /ayuda
+if args.ayuda:
+    help_message = """
+#analizador.py
+# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /frame=5
+# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /extract 01:30:500
+# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /show
+"""
+    print(help_message)
+    sys.exit(0)
 
 # Si no se proporciona una ruta de video, abre un cuadro de diálogo para seleccionar un archivo
 if args.video_path is None:
@@ -147,6 +166,11 @@ frame_count = 0
 # Marca el inicio del procesamiento de gestos
 start_time = time.time()
 
+# Crea la carpeta Fotogramas si no existe
+output_folder = "Fotogramas"
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -189,8 +213,8 @@ while cap.isOpened():
                         }
                         results.append(result)  # Añade el resultado a la lista
 
-                        # Guarda el fotograma en un archivo de imagen
-                        frame_filename = f'gesture_{formatted_time.replace(":", "-")}.jpg'
+                        # Guarda el fotograma en la carpeta Fotogramas
+                        frame_filename = os.path.join(output_folder, f'gesture_{formatted_time.replace(":", "-")}.jpg')
                         cv2.imwrite(frame_filename, frame)
 
                 # Reinicia el contador
