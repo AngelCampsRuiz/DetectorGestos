@@ -1,10 +1,3 @@
-#analizador.py
-# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /frame=5
-# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /extract 01:30:500
-# python3 analizador.py "https://www.youtube.com/watch?v=ocJTV1M6-9o" /show
-# python3 analizador.py /ayuda
-
-
 import cv2
 import mediapipe as mp
 import csv
@@ -14,8 +7,8 @@ import sys
 import tkinter as tk
 from tkinter import filedialog
 from pytube import YouTube
-import youtube_dl
 import os
+from yt_dlp import YoutubeDL
 
 # Inicializa el detector de manos
 mp_hands = mp.solutions.hands
@@ -104,17 +97,16 @@ else:
 # Verifica si la ruta del video es una URL de YouTube
 if 'youtube.com' in video_path or 'youtu.be' in video_path:
     try:
-        yt = YouTube(video_path)
-        stream = yt.streams.filter(file_extension='mp4').get_highest_resolution()
-        video_url = stream.url
-        # Configuración para youtube_dl
+        # Configuración para yt-dlp
         ydl_opts = {
             'quiet': True,  # No imprimir salida
+            'format': 'best',  # Seleccionar la mejor calidad disponible
         }
-        # Usar youtube_dl para extraer información del video
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(video_url, download=False)
-            video_title = info_dict.get('title', None)
+        # Usar yt-dlp para extraer información del video
+        with YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(video_path, download=False)
+            video_url = info_dict['url']  # URL para transmisión del video
+            video_title = info_dict.get('title', 'video')  # Obtener el título del video
     except Exception as e:
         print(f"Error: No se pudo obtener el video de YouTube. Detalles: {e}")
         sys.exit(1)
@@ -225,23 +217,25 @@ while cap.isOpened():
 
     # Muestra la imagen solo si se proporciona el argumento /show y es el frame a procesar
     if args.show and frame_count % args.frames == 0:
-        cv2.imshow('MediaPipe Hands', frame)
+        cv2.imshow('Frame', frame)
 
-    if cv2.waitKey(5) & 0xFF == 27:
+    # Finaliza el video si se presiona 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Marca el final del procesamiento de gestos
-end_time = time.time()
+# Guarda los resultados en un archivo CSV
+if results:
+    csv_filename = f'{video_title}_gestures.csv'
+    with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['time', 'title', 'description', 'tags']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(results)
+    print(f"Resultados guardados en {csv_filename}")
 
-# Cierra las ventanas y libera los recursos
+# Libera recursos
 cap.release()
 cv2.destroyAllWindows()
 
-# Guarda los resultados en un archivo CSV si no se extrajo un frame específico
-if not args.extract:
-    with open('results.csv', 'w', newline='') as f:
-        fieldnames = ['time', 'title', 'description', 'tags']
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(results)
-    print(f"Tiempo total para procesar los gestos: {end_time - start_time} segundos")
+end_time = time.time()
+print(f"Tiempo total de procesamiento: {end_time - start_time} segundos")
