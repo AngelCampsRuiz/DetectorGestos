@@ -1,0 +1,22 @@
+1. Google Colab
+Funciona: Sí, pero con ajustes:
+
+Necesitas instalar algunas librerías con !pip install (opencv-python, mediapipe, pytube, yt-dlp, etc.).
+No admite interfaces gráficas como tkinter. Cambia la carga de archivos a from google.colab import files para subir archivos.
+El acceso a la cámara y la visualización de videos se limitan a la ejecución en la nube.
+2. Deepnote
+Funciona: Parcialmente.
+
+Soporta la mayoría de las bibliotecas y puede instalarlas con !pip install.
+No admite tkinter ni ventanas emergentes de OpenCV. Usa carga de archivos basada en formularios.
+Para procesar videos de YouTube, el soporte está completo.
+3. Kaggle Notebooks
+Funciona: Parcialmente.
+
+Requiere instalar bibliotecas faltantes.
+No admite tkinter ni cv2.imshow(), pero puede mostrar imágenes usando matplotlib.
+4. Replit
+Funciona: Parcialmente.
+
+Requiere configuración inicial.
+Puede procesar videos y mostrar imágenes, pero el soporte para interfaces gráficas es limitado.

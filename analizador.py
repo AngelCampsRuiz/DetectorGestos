@@ -162,48 +162,43 @@ def main():
     Procesa argumentos de línea de comandos y ejecuta la funcionalidad seleccionada.
     """
     parser = argparse.ArgumentParser(description='Detectar gestos de manos en un video.')
-    parser.add_argument('video_path', type=str, nargs='?', default=None, help='Ruta del video o URL del video.')
+    parser.add_argument('video_path', type=str, nargs='?', help='Ruta del video o URL del video.')
     parser.add_argument('--show', action='store_true', help='Muestra el video en tiempo real mientras se procesa.')
     parser.add_argument('--frames', type=int, default=1, help='Procesa cada "x" frames (por defecto, cada frame).')
     parser.add_argument('--extract', type=str, help='Extrae un frame específico (formato: mm:ss:fff).')
     args = parser.parse_args()
 
-    # Establece valores por defecto si no se proporcionan argumentos
+    # Establece el video por defecto solo si no se proporciona ninguno
     default_video = "https://youtu.be/PeeGp1S04Ys?si=Mo5gCLw8rpBSWbmd"
-    default_extract_time = "00:05:000"
-
-    video_path = args.video_path if args.video_path else default_video
-    extract_time = args.extract if args.extract else default_extract_time
+    video_path = args.video_path if args.video_path is not None else default_video
 
     # Obtiene la URL y título del video
     video_url, video_title = get_video_info(video_path)
 
     start_time = time.time()  # Marca el inicio del tiempo
 
-    # Verifica si se debe extraer un frame o procesar el video completo
-    if extract_time:
-        # Valida el formato del tiempo ingresado
-        if not re.match(r'^\d{2}:\d{2}:\d{3}$', extract_time):
+    # Si se especifica --extract, procesa solo ese frame
+    if args.extract:
+        if not re.match(r'^\d{2}:\d{2}:\d{3}$', args.extract):
             print("Error: Formato de tiempo inválido. Usa el formato mm:ss:fff")
             sys.exit(1)
 
         # Convierte el tiempo a milisegundos
         try:
-            minutes, seconds, milliseconds = map(int, extract_time.split(':'))
+            minutes, seconds, milliseconds = map(int, args.extract.split(':'))
             extract_time_ms = (minutes * 60 * 1000) + (seconds * 1000) + milliseconds
         except ValueError:
             print("Error: No se pudo interpretar el tiempo proporcionado. Verifica el formato.")
             sys.exit(1)
 
-        # Extrae el frame solicitado
-        output_filename = f'extracted_frame_{extract_time.replace(":", "-")}.png'
+        output_filename = f'extracted_frame_{args.extract.replace(":", "-")}.png'
         success = extract_frame(video_url, extract_time_ms, output_filename)
         if success:
             print(f"Frame extraído correctamente: {output_filename}")
         else:
             print("Hubo un problema al extraer el frame.")
     else:
-        # Procesa el video completo
+        # Procesa el video completo con los argumentos proporcionados
         process_video(video_url, video_title, args.show, args.frames)
 
     end_time = time.time()  # Marca el fin del tiempo
