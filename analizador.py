@@ -116,6 +116,7 @@ def process_video(video_url, video_title, show_video, frame_step):
         if not ret:
             break
         frame_count += 1
+        # Solo procesa los frames según el frame_step
         if frame_count % frame_step != 0:
             continue
 
