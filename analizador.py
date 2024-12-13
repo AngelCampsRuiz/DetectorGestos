@@ -18,24 +18,38 @@ mp_drawing = mp.solutions.drawing_utils
 
 # Función para reconocer gestos
 def recognize_gesture(landmarks):
+    # Obtiene las coordenadas de los puntos clave de los dedos
     thumb_tip = landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
-    thumb_mcp = landmarks.landmark[mp_hands.HandLandmark.THUMB_MCP]
     index_tip = landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
     middle_tip = landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+    ring_tip = landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP]
+    pinky_tip = landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP]
 
+    thumb_mcp = landmarks.landmark[mp_hands.HandLandmark.THUMB_MCP]
+    index_mcp = landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP]
+    middle_mcp = landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+
+    # Define los criterios para cada gesto
     thumb_up = thumb_tip.y < thumb_mcp.y
     thumb_down = thumb_tip.y > thumb_mcp.y
-    index_up = index_tip.y < thumb_mcp.y
-    middle_up = middle_tip.y < thumb_mcp.y
+    index_up = index_tip.y < index_mcp.y
+    middle_up = middle_tip.y < middle_mcp.y
+    ring_up = ring_tip.y < middle_mcp.y
+    pinky_up = pinky_tip.y < middle_mcp.y
 
-    if thumb_up and index_up and not middle_up:
-        return 'Victoria'
-    elif thumb_up and not index_up and not middle_up:
+    # Lógica para determinar el gesto
+    if thumb_up and index_up and middle_up and ring_up and pinky_up:
+        return 'Mano abierta'
+    elif thumb_up and not index_up and not middle_up and not ring_up and not pinky_up:
         return 'Pulgar arriba'
-    elif thumb_down and not index_up and not middle_up:
-        return 'Pulgar Abajo'
-    elif thumb_up and index_up and middle_up:
-        return 'Palma abierta'
+    elif not thumb_up and index_up and middle_up and ring_up and pinky_up:
+        return 'Cuatro dedos arriba'
+    elif thumb_down and not index_up and not middle_up and not ring_up and not pinky_up:
+        return 'Pulgar abajo'
+    elif not thumb_up and not index_up and not middle_up and not ring_up and pinky_up:
+        return 'Pinky arriba'
+    elif thumb_up and index_up and not middle_up and not ring_up and not pinky_up:
+        return 'Señal de victoria'
     else:
         return 'Gesto desconocido'
 
