@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector de Gestos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: #007BFF;
+            color: #fff;
+            border-radius: 5px;
+        }
+        main {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            margin-top: 20px;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Detector de Gestos</h1>
+    </header>
+    <main>
+        <form id="gesture-form">
+            <div class="form-group">
+                <label for="videoInput">Cargar Video o URL:</label>
+                <input type="file" id="videoInput" name="videoInput">
+                <input type="text" id="videoUrl" name="videoUrl" value="https://www.youtube.com/watch?v=SRXWrMbE1jw&t=19s">
+            </div>
+            <div class="form-group">
+                <label for="frameTime">Tiempo del Frame (mm:ss:fff):</label>
+                <input type="text" id="frameTime" name="frameTime" value="00:01:000">
+            </div>
+            <div class="form-group">
+                <label for="gestureAction">Acción:</label>
+                <select id="gestureAction" name="gestureAction">
+                    <option value="process" selected>Procesar Gestos</option>
+                    <option value="extract">Extraer Frame</option>
+                </select>
+            </div>
+            <div class="form-group" id="processOptions">
+                <label for="frameStep">Saltar Frames (1 = ninguno):</label>
+                <input type="number" id="frameStep" name="frameStep" value="1" min="1">
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showVideo" name="showVideo">
+                    <label for="showVideo">Mostrar video durante procesamiento</label>
+                </div>
+            </div>
+            <button type="button" onclick="runGestureDetection()">Ejecutar</button>
+        </form>
+        <div class="output" id="output">
+            <h3>Resultados:</h3>
+            <pre id="outputText">Esperando acción...</pre>
+            <div id="resultsList"></div>
+        </div>
+    </main>
+    <script>
+        document.getElementById('gestureAction').addEventListener('change', function() {
+            const processOptions = document.getElementById('processOptions');
+            processOptions.style.display = this.value === 'process' ? 'block' : 'none';
+        });
+
+        function displayResults(data) {
+            const outputText = document.getElementById('outputText');
+            const resultsList = document.getElementById('resultsList');
+            
+            outputText.innerText = `Procesamiento completado.\n`;
+            
+            if (data.data.folder_name) {
+                if (data.data.file_name) {
+                    // Caso de extracción de frame
+                    outputText.innerText += `Frame guardado en:\n`;
+                    outputText.innerText += `Carpeta: Fotogramas/${data.data.folder_name}\n`;
+                    outputText.innerText += `Archivo: ${data.data.file_name}\n`;
+                } else {
+                    // Caso de procesamiento de gestos
+                    outputText.innerText += `Carpeta: Fotogramas/${data.data.folder_name}\n`;
+                    outputText.innerText += `Gestos detectados: ${data.data.gestures_detected}\n`;
+                    
+                    if (data.data.csv_filename) {
+                        outputText.innerText += `CSV guardado en: ${data.data.csv_filename}\n`;
+                    }
+                }
+            }
+
+            if (data.data.results && data.data.results.length > 0) {
+                let resultsHtml = '<h4>Gestos detectados:</h4><ul>';
+                data.data.results.forEach(result => {
+                    resultsHtml += `
+                        <li>
+                            Tiempo: ${result.time} - 
+                            Gesto: ${result.tags}
+                        </li>`;
+                });
+                resultsHtml += '</ul>';
+                resultsList.innerHTML = resultsHtml;
+            }
+        }
+
+        function runGestureDetection() {
+            const formData = new FormData();
+            const videoInput = document.getElementById('videoInput').files[0];
+            const videoUrl = document.getElementById('videoUrl').value;
+            const frameTime = document.getElementById('frameTime').value || "00:01:000";
+            const action = document.getElementById('gestureAction').value;
+            const frameStep = document.getElementById('frameStep').value;
+            const showVideo = document.getElementById('showVideo').checked;
+
+            formData.append('videoInput', videoInput);
+            formData.append('videoUrl', videoUrl);
+            formData.append('frameTime', frameTime);
+            formData.append('gestureAction', action);
+            formData.append('frameStep', frameStep);
+            formData.append('showVideo', showVideo);
+
+            const outputText = document.getElementById('outputText');
+            outputText.innerText = "Procesando...\n";
+
+            fetch('/process', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayResults(data);
+                } else {
+                    outputText.innerText += `Error: ${data.message}\n`;
+                }
+            })
+            .catch(error => {
+                outputText.innerText += `Error de conexión: ${error}\n`;
+            });
+        }
+    </script>
+</body>
+</html>
