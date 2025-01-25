@@ -1,0 +1,5 @@
+opencv-python
+mediapipe
+pytube
+yt-dlp
+numpypip install -r requirements.txt
