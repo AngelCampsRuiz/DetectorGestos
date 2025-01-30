@@ -265,6 +265,40 @@ def process_video(video_url, video_title, show_video, frame_step):
         'folder_name': current_title
     }
 
+def detect_objects(video_path, output_folder):
+    # Cargar el modelo preentrenado
+    net = cv2.dnn.readNetFromCaffe('deploy.prototxt', 'mobilenet_ssd.caffemodel')
+    cap = cv2.VideoCapture(video_path)
+    frame_count = 0
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        frame_count += 1
+        (h, w) = frame.shape[:2]
+        blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 0.007843, (300, 300), 127.5)
+        net.setInput(blob)
+        detections = net.forward()
+
+        for i in range(detections.shape[2]):
+            confidence = detections[0, 0, i, 2]
+            if confidence > 0.2:
+                idx = int(detections[0, 0, i, 1])
+                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                (startX, startY, endX, endY) = box.astype("int")
+                label = f"{CLASSES[idx]}: {confidence:.2f}"
+                cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                cv2.putText(frame, label, (startX, startY - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        if frame_count % 30 == 0:  # Guardar un frame cada 30 frames
+            frame_path = os.path.join(output_folder, f"detected_{frame_count}.jpg")
+            cv2.imwrite(frame_path, frame)
+
+    cap.release()
+    return output_folder
+
 # Función principal
 def main():
     """

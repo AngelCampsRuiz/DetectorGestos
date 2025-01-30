@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import time
-from analizador import extract_frame, process_video, get_video_info
+from analizador import extract_frame, process_video, get_video_info, detect_objects
 
 app = Flask(__name__)
 
@@ -63,6 +63,19 @@ def process_request():
         return jsonify({'status': 'error', 'message': str(e)})
 
     return jsonify({'status': 'error', 'message': 'Acción no válida.'})
+
+@app.route('/detect_objects', methods=['POST'])
+def detect_objects_request():
+    video_file = request.files.get('videoInput')
+    if video_file:
+        video_path = os.path.join("temp", video_file.filename)
+        os.makedirs("temp", exist_ok=True)
+        video_file.save(video_path)
+        output_folder = os.path.join("Fotogramas", "ObjectDetection")
+        os.makedirs(output_folder, exist_ok=True)
+        detect_objects(video_path, output_folder)
+        return jsonify({'status': 'success', 'message': 'Objetos detectados correctamente', 'folder': output_folder})
+    return jsonify({'status': 'error', 'message': 'No se proporcionó un video.'})
 
 if __name__ == '__main__':
     app.run(debug=True)
