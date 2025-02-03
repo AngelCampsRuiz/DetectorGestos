@@ -79,8 +79,9 @@
             <div class="form-group">
                 <label for="gestureAction">Acción:</label>
                 <select id="gestureAction" name="gestureAction">
-                    <option value="process" selected>Procesar Gestos</option>
+                    <option value="process">Procesar Gestos</option>
                     <option value="extract">Extraer Frame</option>
+                    <option value="detect_objects">Detectar Objetos</option>
                 </select>
             </div>
             <div class="form-group" id="processOptions">
@@ -124,30 +125,36 @@
             outputText.innerText = `Procesamiento completado.\n`;
             
             if (data.data.folder_name) {
-                if (data.data.file_name) {
-                    // Caso de extracción de frame
-                    outputText.innerText += `Frame guardado en:\n`;
-                    outputText.innerText += `Carpeta: Fotogramas/${data.data.folder_name}\n`;
-                    outputText.innerText += `Archivo: ${data.data.file_name}\n`;
-                } else {
-                    // Caso de procesamiento de gestos
-                    outputText.innerText += `Carpeta: Fotogramas/${data.data.folder_name}\n`;
+                outputText.innerText += `Carpeta: Fotogramas/${data.data.folder_name}\n`;
+                
+                if (data.data.gestures_detected) {
                     outputText.innerText += `Gestos detectados: ${data.data.gestures_detected}\n`;
-                    
-                    if (data.data.csv_filename) {
-                        outputText.innerText += `CSV guardado en: ${data.data.csv_filename}\n`;
-                    }
+                } else if (data.data.objects_detected) {
+                    outputText.innerText += `Objetos detectados: ${data.data.objects_detected}\n`;
+                }
+                
+                if (data.data.csv_filename) {
+                    outputText.innerText += `CSV guardado en: ${data.data.csv_filename}\n`;
                 }
             }
 
             if (data.data.results && data.data.results.length > 0) {
-                let resultsHtml = '<h4>Gestos detectados:</h4><ul>';
+                let resultsHtml = '<h4>Detecciones:</h4><ul>';
                 data.data.results.forEach(result => {
-                    resultsHtml += `
-                        <li>
-                            Tiempo: ${result.time} - 
-                            Gesto: ${result.tags}
-                        </li>`;
+                    if (result.tags) {  // Si es un gesto
+                        resultsHtml += `
+                            <li>
+                                Tiempo: ${result.time} - 
+                                Gesto: ${result.tags}
+                            </li>`;
+                    } else if (result.object) {  // Si es un objeto
+                        resultsHtml += `
+                            <li>
+                                Tiempo: ${result.time} - 
+                                Objeto: ${result.object} 
+                                (Confianza: ${result.confidence})
+                            </li>`;
+                    }
                 });
                 resultsHtml += '</ul>';
                 resultsList.innerHTML = resultsHtml;

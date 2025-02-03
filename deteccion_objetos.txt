@@ -1,0 +1,58 @@
+IMPLEMENTACIÓN DE DETECCIÓN DE OBJETOS EN VIDEOS
+
+1. DESCRIPCIÓN GENERAL
+Se ha implementado un sistema de detección de objetos en videos utilizando el modelo YOLOv3 (You Only Look Once). 
+El sistema puede procesar tanto videos locales como videos de YouTube.
+
+2. ARCHIVOS NECESARIOS
+- yolov3.weights: Archivo de pesos pre-entrenados del modelo
+- yolov3.cfg: Archivo de configuración del modelo
+- coco.names: Lista de clases que el modelo puede detectar
+
+3. FUNCIONALIDAD
+El sistema puede:
+- Detectar múltiples objetos en cada frame del video
+- Dibujar cajas delimitadoras alrededor de los objetos detectados
+- Mostrar la clase del objeto y el nivel de confianza
+- Guardar frames con las detecciones
+- Generar un CSV con los resultados
+- Mostrar el video en tiempo real durante el procesamiento
+
+4. PROCESO DE DETECCIÓN
+a) Preprocesamiento:
+   - Carga del modelo YOLO y sus configuraciones
+   - Lectura frame por frame del video
+   - Redimensionamiento de frames para el modelo
+
+b) Detección:
+   - Conversión de frames a blob para el modelo
+   - Aplicación del modelo a cada frame
+   - Filtrado de detecciones por umbral de confianza (0.5)
+
+c) Post-procesamiento:
+   - Dibujo de cajas delimitadoras
+   - Etiquetado de objetos detectados
+   - Guardado de frames con detecciones
+   - Registro de resultados en CSV
+
+5. ESTRUCTURA DE RESULTADOS
+- Carpeta principal: "Fotogramas"
+  - Subcarpeta por video: "[nombre_video]"
+    - Frames con detecciones
+    - Carpeta CSV
+      - Archivo CSV con detalles de detecciones
+
+6. FORMATO CSV
+Columnas:
+- time: Tiempo del frame en el video
+- title: Título del video
+- description: Tipo de detección
+- object: Clase del objeto detectado
+- confidence: Nivel de confianza de la detección
+
+7. INTEGRACIÓN
+El sistema está integrado en una aplicación web Flask que permite:
+- Subir videos locales
+- Procesar videos de YouTube
+- Visualizar resultados en tiempo real
+- Descargar resultados en CSV 
